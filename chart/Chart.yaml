@@ -1,0 +1,6 @@
+apiVersion: v2
+name: samma-mcp
+description: Read-only MCP server for samma.io scan targets and results
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

@@ -1,0 +1,57 @@
+replicaCount: 2
+
+fullnameOverride: "samma-mcp"
+
+image:
+  repository: ghcr.io/samma-io/mcp
+  tag: latest
+  pullPolicy: IfNotPresent
+
+# The samma app (samma-io/app chart, service "samma-app") in the same namespace.
+sammaApiUrl: "http://samma-app"
+# How long a verified API token is cached. A revoked token stops working
+# within this window.
+tokenCacheTTL: "60s"
+logLevel: "info"
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 8080
+
+ingress:
+  enabled: true
+  className: ""
+  annotations:
+    cert-manager.io/cluster-issuer: http
+    acme.cert-manager.io/http01-edit-in-place: "true"
+    kubernetes.io/ingress.class: traefik
+    kubernetes.io/tls-acme: "true"
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure,web
+  hosts:
+    - host: mcp.samma.io
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: mcp-samma-io-tls
+      hosts:
+        - mcp.samma.io
+
+resources:
+  requests:
+    cpu: 20m
+    memory: 32Mi
+  limits:
+    cpu: 250m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+tolerations: []
+affinity: {}
