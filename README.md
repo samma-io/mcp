@@ -7,10 +7,30 @@ findings?"* or *"What did the TLS scan find on api.example.com?"*.
 
 - Endpoint: `https://mcp.samma.io/mcp` (Streamable HTTP)
 - Auth: your samma API token as `Authorization: Bearer <token>`.
-  Create one in the dashboard under **API tokens**. A **read-only** token is
-  recommended. The server only ever reads, but a read-only token also can't
-  change targets if it leaks.
 - Scope: everything is limited to the organisation that owns the token.
+- Read-only: it can't start scans or change targets.
+
+## Quick start
+
+1. **Create a token.** On samma.io, open **Dashboard → API Tokens** and click
+   **New Token**. Enter a name (for example "Claude"), keep **Read-only**
+   ticked, and click **Generate**. Copy the token now, because it is shown only
+   once. The server never
+   writes, and a read-only token can't change anything even if it leaks.
+2. **Add the server to your agent** (see [Connecting a client](#connecting-a-client)).
+3. **Ask a question**, for example:
+   - "Which of my targets have critical or high findings?"
+   - "What's new in the last 7 days?"
+   - "Show me the TLS results for api.example.com, and how do I fix them?"
+   - "Which targets are unreachable?"
+   - "Summarise the attack surface for profile *Production*."
+
+The agent chains the tools itself. Typically it calls `list_targets` to find
+an id, then `get_target` or `get_latest_results`, or `list_findings` for a
+summary across all targets.
+
+To remove access, click **Revoke** next to the token on the same page. It
+stops working within 60 seconds.
 
 ## Tools
 
@@ -55,6 +75,18 @@ MCP Inspector: `npx @modelcontextprotocol/inspector`, choose *Streamable
 HTTP*, set the URL to `https://mcp.samma.io/mcp`, and add the `Authorization`
 header.
 
+Raw HTTP, to see what a client sends:
+
+```sh
+curl -s https://mcp.samma.io/mcp \
+  -H "Authorization: Bearer $SAMMA_API_TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"list_findings","arguments":{"since":"7d"}}}'
+```
+
+To test every tool end to end, run `SAMMA_TOKEN=<token> scripts/smoke-test.sh`.
+
 ## How it works
 
 ```
@@ -90,3 +122,6 @@ SAMMA_API_URL=http://localhost:3000 go run ./cmd/samma-mcp
 Deploy: on a push to `main`, *Docker Publish* builds `ghcr.io/samma-io/mcp:<sha>`.
 *Deploy To Production* then renders `chart/` into `samma-io/deploy` at
 `mcp/deploy.yaml`, which Argo CD syncs.
+
+Running it in production (DNS/TLS setup, release and rollback, smoke tests,
+troubleshooting) is covered in [docs/operations.md](docs/operations.md).
