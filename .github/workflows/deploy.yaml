@@ -30,6 +30,8 @@ jobs:
       # workflow_run, github.sha is whatever main points at when this run
       # starts, which can be a newer commit whose image is not pushed yet.
       DEPLOY_SHA: ${{ github.event.workflow_run.head_sha }}
+      # Optional: the Slack step is skipped when the secret is not set.
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
     steps:
       # Chart and image tag come from the same commit.
       - name: Checkout repository
@@ -66,9 +68,8 @@ jobs:
 
       - name: Send custom JSON data to Slack workflow
         id: slack
+        if: env.SLACK_WEBHOOK_URL != ''
         uses: slackapi/slack-github-action@v1.26.0
         with:
           payload: |
             {"text":"The repo ${{ github.repository }} is build and ready for cluster to deploy"}
-        env:
-          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
